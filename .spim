@@ -1,0 +1,52 @@
+	.data 
+	Thumsx3:	.asciiz "THUMS THUMS THUMS"
+	Thumsx6:	.asciiz "THUMS THUMS THUMS THUMS THUMS THUMS"
+	QuebraLinha: .asciiz "\n"
+	.text
+main:
+	li $v0,5			#LEITURA DO PRIMEIRO FLOAT
+	syscall
+	
+	move $t0,$v0
+	addi $t0,$t0,1
+	
+	jal while
+	
+	li $v0, 10			#system call for exit
+	syscall 
+	
+while:
+	beq $t0, 1, saida
+	li $t1, 2
+	
+	div $t0,$t1
+	mfhi $t2
+	bne $t2, 0, impar
+	
+	li $v0,4			#CHAMADA PARA IMPRESSAO DE STRING
+	la $a0,Thumsx3			#IMPRIME O \n
+	syscall
+	
+	li $v0,4			#CHAMADA PARA IMPRESSAO DE STRING
+	la $a0,QuebraLinha			#IMPRIME O \n
+	syscall
+	
+	addi $t0,$t0,-1
+	j while
+	
+impar:
+	li $v0,4			#CHAMADA PARA IMPRESSAO DE STRING
+	la $a0,Thumsx6			#IMPRIME O \n
+	syscall
+	
+	li $v0,4			#CHAMADA PARA IMPRESSAO DE STRING
+	la $a0,QuebraLinha			#IMPRIME O \n
+	syscall
+	
+	addi $t0,$t0,-1
+	
+	j while
+
+saida:
+	li $v0, 10			#system call for exit
+	syscall 			

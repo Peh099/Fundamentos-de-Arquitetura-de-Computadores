@@ -1,0 +1,27 @@
+	.data
+str: .asciiz "\n"		
+	.text
+	
+main:
+ 	li $v0, 5		 #LEITURA DO PRIMEIRO INTEIRO
+	syscall
+	
+	move $t0, $v0		#MOVE O CONTEUDO DE V0 PARA T0
+	
+	li $v0, 5 		#LEUTURA DO SEGUNDO INTEIRO
+	syscall
+	
+	move $t1,$v0		#MOVE O CONTEUDO DE V0 PARA T1
+	
+	add $t2, $t1, $t0	#SOMA T1 E T0 E ATRIBUI O RESULTADO PARA T2
+			
+	li $v0,1 		#CHAMADA PARA IMPRESSAO DE INTEIRO
+	move $a0, $t2		#MOVE T2 PARA A0, PARA QUE T2 POSSA SER IMPRESSO
+	syscall
+	
+	li $v0, 4		#CHAMADA PRA IMPRESSAO DE STR
+	la $a0, str		
+	syscall
+	
+	li $v0,10		#COMANDO EXIT
+	syscall

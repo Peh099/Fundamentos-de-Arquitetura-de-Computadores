@@ -1,0 +1,10 @@
+	.data
+str:    .asciiz "Ola Mundo\n"
+
+	.text
+main: 	li $v0, 4	#Imprime "Olá Mundo"
+	la $a0, str
+	syscall
+	
+	li $v0, 10	#Encerra o programa
+	syscall 

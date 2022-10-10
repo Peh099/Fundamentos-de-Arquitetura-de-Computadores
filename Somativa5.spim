@@ -1,0 +1,114 @@
+	.data
+buffer:     .space 256  # Aloca 256 bytes de espaço
+stringInico: 	.ascii "CRC16-BUYPASS: "
+zeroX: 		.asciiz "0x"
+resultado: .space 8
+QuebraLinha: 	    .asciiz "\n"
+
+	.text
+main: 
+        li  $v0, 8   # Pega a entrada
+
+        la  $a0, buffer   
+        li  $a1, 256
+
+        move    $t0, $a0   		# Salva a string digitada em $t0
+        syscall
+	       
+	addi $t1,$zero,0		#INICIALIZA O CONTADOR COM O VALOR 1
+	
+	addi $t2,$zero,0		#INICIALIZA O CONTADOR 2 COM O VALOR 1
+	
+	addi $t7,$zero,0
+	
+	li $t4, 0x00008005		#GERADOR
+	li $t5, 0x00008000		#MASK
+	addi	$t3, $0, 		'\n' #adiciona \n no final da string 
+	
+	jal for
+	
+for:
+	lb  $a0, ($t0)		#Passa o conteúdo de $t0 para $a0
+	beq $a0,$t3,saida		#Se o caracter igual \0 vá para saída
+	
+	sll $s0, $a0, 8		#(string[i] << 8)
+	and $s1	, $s0, 0xFFFF  	#((string[i] << 8) & 0x0000FFFF)
+	
+	xor $v1, $v1, $s1	#crc ^= (int)((string[i] << 8) & 0x0000FFFF);
+	
+	li  $t2, 0
+	jal for2
+continue_for:	
+	addi $t1,$t1,1
+	j proximo
+	
+for2:	
+	beq $t2,8,continue_for
+	and $s2,$v1,$t5		#(crc & MASK)
+	beq $s2,$t5 ,if		#if(crc & MASK) == MASK
+	bne $s2,$t5,else	#else
+	addi $t2,$t2,1
+continue:
+
+	and $v1,$v1, 0xFFFF 
+	addi $t2,$t2,1
+	
+	j for2 
+	
+if:
+	sll $v1,$v1,1		#CRC = CRC << 1
+	xor $v1,$v1,$t4		#CRC= CRC^GERADOR
+	j continue
+	
+else:			
+	sll $v1,$v1,1		#CRC = CRC << 1 
+	j continue      
+	
+proximo:
+	add $t0,$t0,1		#Adiciona 1 em $t0 para ir para o proximo caracter da string
+        j for			#Continua a percorrer a string
+        
+saida:
+	add $t8, $v1, 0	
+	#and $t8,$t8, 0xFFFF 
+	
+	la $t9, resultado		#CARREGA EM $t4 O VALOR DE ESPACOMANTISSA
+	li $t5, 8			#CARREGA EM $t5 O VALOR 8 QUE SERA O NUMERO DE VEZES QUE A FUNCAO IRA DECREMENTAR
+	j funcao_incio_mantissa		#VAI DIRETO PARA A FUNCAO_INICIO_MANTISSA, RESPONSAVEL POR CONVERTER PARA HEXADECIMAL
+	
+funcao_incio_mantissa:
+	beqz    $t5,funcao_continue_print	        #CONDICAO DE PARADA DO FOR, $t5==0
+	rol 	$t8,$t8, 4				#ROTACIONA A MANTISSA ARMAZENADA EM $t2 PARA A ESQUERDA 4 VEZES 
+	andi 	$t6,$t8, 0xF				#FAZ A OPERACAO AND ENTRE 0xF E CONTEUDO DE $t8 E ARMAZENA EM $t6
+	ble 	$t6, 9, funcao_numero_menor		#CASO CONTEUDO DE $t6 <= A 9, VA PARA FUNCAO_NUMERO_ESCOLHIDO
+	addi 	$t6,$t6, 55				#SE NAO O NUMERO SERA UMA LETRA (A,B,C,D OU E), POR ISSO ADICIONE 55 PARA CORRESPONDER A RESPECTIVA LETRA NA TABELA ASCII
+	j funcao_hexa					#RETORNA PARA A LINHA DEBAIXO DE ONDE FOI CHAMADO
+		
+funcao_continue_print:
+	li 	$v0,4			#CHAMADA IMPRESSAO DE STRING
+	la 	$a0, stringInico	#IMPRIMIR O RESPECTIVO ENDERECO DA MANTISSA CONVERTIDA PARA HEXADECIMAL
+	syscall
+	
+	li 	$v0,4			#CHAMADA IMPRESSAO DE STRING
+	la 	$a0,resultado+4		#IMPRIMIR O RESPECTIVO ENDERECO DA MANTISSA CONVERTIDA PARA HEXADECIMAL
+	syscall
+	
+	li 	$v0,4			#CHAMADA IMPRESSAO DE STRING
+	la 	$a0,QuebraLinha		#IMPRIMIR O RESPECTIVO ENDERECO DA MANTISSA CONVERTIDA PARA HEXADECIMAL
+	syscall
+	
+	j end
+
+funcao_numero_menor:
+	addi $t6,$t6,48			# COMO É UM NUMERO <=9, SERÁ ADICIONADO 48 AO NUMERO QUE REPRESENTARA SUA RESPECTIVA POSICAO NA TABELA ASCII
+
+funcao_hexa:
+	sb 	$t6,0($t9)		#CARREGA OS 8 ULTIMOS BITS DE $t6 EM $t4
+	
+	addi 	$t9,$t9,1		#SOMA 1 A $t9
+	addi 	$t5,$t5,-1		#SOMA -1 A $t5, QUE SERA O DECREMENTO DO LOOP DA FUNCAO
+	j 	funcao_incio_mantissa	#VA DIRETAMENTE PARA O INICO DO LOOP
+	  	    	    	  	    	    	  	    	    	  	    	
+end:
+        li $v0, 10  # Encerra o programa
+        syscall
